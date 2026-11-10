@@ -1,5 +1,5 @@
 import { CLAN_IDS } from "../lib/clanes.js";
-import { conexion, prepararTablas } from "../lib/db.js";
+import { conexion, limpiarNombre, prepararTablas } from "../lib/db.js";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -11,8 +11,9 @@ export default async function handler(req, res) {
   const documento = String(body.documento ?? "").trim();
   const clan = String(body.clan ?? "");
   const equipoId = Number(body.equipoId);
+  const nombre = limpiarNombre(body.nombre);
 
-  if (!/^\d{5,12}$/.test(documento) || !CLAN_IDS.includes(clan) || !Number.isInteger(equipoId)) {
+  if (!nombre || !/^\d{5,12}$/.test(documento) || !CLAN_IDS.includes(clan) || !Number.isInteger(equipoId)) {
     return res.status(400).json({ ok: false, motivo: "datos" });
   }
 
@@ -28,8 +29,8 @@ export default async function handler(req, res) {
     }
     // Se guarda el nombre de la célula: el voto se conserva aunque luego la quiten.
     const filas = await sql`
-      INSERT INTO votos (documento, clan, celula)
-      VALUES (${documento}, ${clan}, ${equipo[0].nombre})
+      INSERT INTO votos (documento, nombre, clan, celula)
+      VALUES (${documento}, ${nombre}, ${clan}, ${equipo[0].nombre})
       ON CONFLICT (documento) DO NOTHING
       RETURNING documento`;
     if (filas.length === 0) {

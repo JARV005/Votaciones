@@ -149,11 +149,15 @@ tr:last-child td { border-bottom: 0; }
     <header class="head">
       <span class="kicker" id="voto-clan"></span>
       <h1>¿Cuál célula es la ganadora?</h1>
-      <p class="sub">Escribe tu documento, elige una célula y registra tu voto.</p>
+      <p class="sub">Escribe tu nombre y tu documento, elige una célula y registra tu voto.</p>
       <button class="link" id="btn-cambiar-clan" type="button">No es mi clan</button>
     </header>
 
     <form id="form-voto" novalidate>
+      <div class="field">
+        <label class="label" for="nombre">Nombre completo</label>
+        <input class="input" id="nombre" autocomplete="name" maxlength="80" placeholder="Nombres y apellidos">
+      </div>
       <div class="field">
         <label class="label" for="documento">Número de documento</label>
         <input class="input input-num" id="documento" inputmode="numeric" autocomplete="off" maxlength="12" placeholder="Solo números, sin puntos">
@@ -180,7 +184,7 @@ tr:last-child td { border-bottom: 0; }
     <section class="done" aria-live="polite">
       <span class="done-tag">Voto registrado</span>
       <p class="done-name" id="hecho-nombre"></p>
-      <p class="sub">Tu voto quedó guardado con tu número de documento. Ya puedes cerrar esta página.</p>
+      <p class="sub">Tu voto quedó guardado con tu nombre y tu número de documento. Ya puedes cerrar esta página.</p>
     </section>
   </div>
 
@@ -241,7 +245,7 @@ tr:last-child td { border-bottom: 0; }
       <p class="sub" id="tl-vacio" hidden>Este clan aún no tiene votos.</p>
       <div class="tablewrap" id="tl-tablawrap">
         <table>
-          <thead><tr><th>Documento</th><th>Célula</th><th>Fecha</th></tr></thead>
+          <thead><tr><th>Nombre</th><th>Documento</th><th>Célula</th><th>Fecha</th></tr></thead>
           <tbody id="tl-filas"></tbody>
         </table>
       </div>
@@ -259,6 +263,10 @@ tr:last-child td { border-bottom: 0; }
       <section class="section" id="final-votar">
         <h2>Voto del TL</h2>
         <form id="form-final" novalidate>
+          <div class="field">
+            <label class="label" for="final-nombre">Tu nombre completo</label>
+            <input class="input" id="final-nombre" autocomplete="name" maxlength="80" placeholder="Nombres y apellidos">
+          </div>
           <div class="field">
             <label class="label" for="final-documento">Tu número de documento</label>
             <input class="input input-num" id="final-documento" inputmode="numeric" autocomplete="off" maxlength="12" placeholder="Solo números, sin puntos">
@@ -279,7 +287,7 @@ tr:last-child td { border-bottom: 0; }
         <p class="sub" id="final-registro-vacio" hidden>Ningún TL ha votado todavía.</p>
         <div class="tablewrap" id="final-tablawrap">
           <table>
-            <thead><tr><th>Documento</th><th>Célula</th><th>Clan</th><th>Fecha</th></tr></thead>
+            <thead><tr><th>Nombre</th><th>Documento</th><th>Célula</th><th>Clan</th><th>Fecha</th></tr></thead>
             <tbody id="final-filas"></tbody>
           </table>
         </div>
@@ -343,11 +351,13 @@ let equipoId = null;
 let equipoNombre = "";
 let enviando = false;
 
+const limpiarNombre = (v) => v.replace(/\s+/g, " ").trim();
+const nombreValido = (id) => { const n = limpiarNombre($(id).value); return n.length >= 3 && n.length <= 80; };
 function docValido() { return /^\d{5,12}$/.test($("documento").value); }
 
 function refrescar() {
   const btn = $("btn-votar");
-  btn.disabled = enviando || !docValido() || equipoId === null;
+  btn.disabled = enviando || !nombreValido("nombre") || !docValido() || equipoId === null;
   btn.textContent = enviando ? "Guardando voto" : equipoId !== null ? "Votar por " + equipoNombre : "Elige una célula";
 }
 
@@ -394,6 +404,8 @@ async function abrirVotacion() {
   });
 }
 
+$("nombre").addEventListener("input", () => { aviso("aviso-voto", ""); refrescar(); });
+
 $("documento").addEventListener("input", (e) => {
   e.target.value = e.target.value.replace(/\D/g, "");
   aviso("aviso-voto", "");
@@ -402,13 +414,14 @@ $("documento").addEventListener("input", (e) => {
 
 $("form-voto").addEventListener("submit", async (e) => {
   e.preventDefault();
-  if (enviando || !docValido() || equipoId === null) return;
+  if (enviando || !nombreValido("nombre") || !docValido() || equipoId === null) return;
   const documento = $("documento").value;
+  const nombre = limpiarNombre($("nombre").value);
   enviando = true;
   aviso("aviso-voto", "");
   refrescar();
   try {
-    const res = await enviar("/api/votar", { documento, clan, equipoId });
+    const res = await enviar("/api/votar", { nombre, documento, clan, equipoId });
     if (res.ok) {
       try { localStorage.setItem(CLAVE_LOCAL, res.celula); } catch {}
       mostrarHecho(res.celula);
@@ -544,7 +557,7 @@ function pintarPanel() {
   $("tl-tablawrap").hidden = votos.length === 0;
   $("tl-filas").replaceChildren(...votos.map((v) => {
     const tr = el("tr");
-    tr.append(el("td", "", v.documento), el("td", "", v.celula), el("td", "", fecha(v.creado_en)));
+    tr.append(el("td", "", v.nombre || "Sin nombre"), el("td", "", v.documento), el("td", "", v.celula), el("td", "", fecha(v.creado_en)));
     return tr;
   }));
 }
@@ -557,7 +570,7 @@ function finalDocValido() { return /^\d{5,12}$/.test($("final-documento").value)
 
 function refrescarFinal() {
   const btn = $("btn-final");
-  btn.disabled = cargando || !finalDocValido() || finalId === null;
+  btn.disabled = cargando || !nombreValido("final-nombre") || !finalDocValido() || finalId === null;
   btn.textContent = finalId !== null ? "Votar por " + finalNombre : "Elige una finalista";
 }
 
@@ -612,10 +625,12 @@ function pintarFinal() {
   $("final-tablawrap").hidden = datos.votosFinal.length === 0;
   $("final-filas").replaceChildren(...datos.votosFinal.map((v) => {
     const tr = el("tr");
-    tr.append(el("td", "", v.documento), el("td", "", v.celula), el("td", "", nombreClan(v.clan)), el("td", "", fecha(v.creado_en)));
+    tr.append(el("td", "", v.nombre || "Sin nombre"), el("td", "", v.documento), el("td", "", v.celula), el("td", "", nombreClan(v.clan)), el("td", "", fecha(v.creado_en)));
     return tr;
   }));
 }
+
+$("final-nombre").addEventListener("input", () => { aviso("aviso-final", ""); refrescarFinal(); });
 
 $("final-documento").addEventListener("input", (e) => {
   e.target.value = e.target.value.replace(/\D/g, "");
@@ -625,18 +640,20 @@ $("final-documento").addEventListener("input", (e) => {
 
 $("form-final").addEventListener("submit", async (e) => {
   e.preventDefault();
-  if (cargando || !finalDocValido() || finalId === null) return;
+  if (cargando || !nombreValido("final-nombre") || !finalDocValido() || finalId === null) return;
   const documento = $("final-documento").value;
+  const nombre = limpiarNombre($("final-nombre").value);
   const elegido = finalNombre;
   ocupado(true);
   aviso("aviso-final", "");
   aviso("ok-final", "");
   let recargar = false;
   try {
-    const res = await enviar("/api/final", { clave: claveTL, documento, equipoId: finalId });
+    const res = await enviar("/api/final", { clave: claveTL, nombre, documento, equipoId: finalId });
     if (res.ok) {
       datos.votosFinal = res.votosFinal;
       $("final-documento").value = "";
+      $("final-nombre").value = "";
       finalId = null;
       finalNombre = "";
       aviso("ok-final", "Voto registrado para " + elegido + ".");

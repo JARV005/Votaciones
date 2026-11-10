@@ -4,7 +4,7 @@ Mini aplicación para que los coders voten por la célula ganadora de su clan.
 
 - Cuatro clanes: Ritchie, Nakamoto, Ubuntu y Tesla. Cada clan tiene sus propias células.
 - Un voto por número de documento (lo impide la base de datos).
-- Cada voto guarda documento, clan, célula y fecha.
+- Cada voto guarda nombre, documento, clan, célula y fecha.
 - Panel del TL en `/#tl`, protegido con clave: resultados separados por clan y edición de células (agregar y quitar).
 - Final: en el panel se marcan las células finalistas y los TL votan por la ganadora, un voto por documento.
 

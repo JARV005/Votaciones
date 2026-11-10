@@ -16,11 +16,11 @@ export default async function handler(req, res) {
   try {
     await prepararTablas(sql);
     const votos = await sql`
-      SELECT documento, clan, celula, creado_en
+      SELECT documento, nombre, clan, celula, creado_en
       FROM votos
       ORDER BY creado_en DESC`;
     const votosFinal = await sql`
-      SELECT documento, clan, celula, creado_en
+      SELECT documento, nombre, clan, celula, creado_en
       FROM votos_final
       ORDER BY creado_en DESC`;
     const equipos = await listarEquipos(sql);

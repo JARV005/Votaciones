@@ -1,5 +1,5 @@
 import { revisarClave } from "../lib/clave.js";
-import { conexion, prepararTablas } from "../lib/db.js";
+import { conexion, limpiarNombre, prepararTablas } from "../lib/db.js";
 
 // Voto de un TL en la final. Requiere la clave del TL y permite un voto por documento.
 export default async function handler(req, res) {
@@ -13,7 +13,8 @@ export default async function handler(req, res) {
 
   const documento = String(body.documento ?? "").trim();
   const equipoId = Number(body.equipoId);
-  if (!/^\d{5,12}$/.test(documento) || !Number.isInteger(equipoId)) {
+  const nombre = limpiarNombre(body.nombre);
+  if (!nombre || !/^\d{5,12}$/.test(documento) || !Number.isInteger(equipoId)) {
     return res.status(400).json({ ok: false, motivo: "datos" });
   }
 
@@ -28,15 +29,15 @@ export default async function handler(req, res) {
       return res.status(409).json({ ok: false, motivo: "equipo" });
     }
     const filas = await sql`
-      INSERT INTO votos_final (documento, clan, celula)
-      VALUES (${documento}, ${equipo[0].clan}, ${equipo[0].nombre})
+      INSERT INTO votos_final (documento, nombre, clan, celula)
+      VALUES (${documento}, ${nombre}, ${equipo[0].clan}, ${equipo[0].nombre})
       ON CONFLICT (documento) DO NOTHING
       RETURNING documento`;
     if (filas.length === 0) {
       return res.status(409).json({ ok: false, motivo: "duplicado" });
     }
     const votosFinal = await sql`
-      SELECT documento, clan, celula, creado_en
+      SELECT documento, nombre, clan, celula, creado_en
       FROM votos_final
       ORDER BY creado_en DESC`;
     return res.status(200).json({ ok: true, votosFinal });
