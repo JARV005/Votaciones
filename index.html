@@ -425,7 +425,6 @@ $("form-voto").addEventListener("submit", async (e) => {
   try {
     const res = await enviar("/api/votar", { nombre, documento, clan, equipoId });
     if (res.ok) {
-      try { localStorage.setItem(CLAVE_LOCAL, res.celula); } catch {}
       mostrarHecho(res.celula);
     } else if (res.motivo === "duplicado") {
       aviso("aviso-voto", "El documento " + documento + " ya votó. Solo se permite un voto por documento.");
@@ -794,12 +793,11 @@ function enrutar() {
     mostrar(claveTL ? "vista-tl" : "vista-tl-acceso");
     return;
   }
-  let previo = null;
-  try { previo = localStorage.getItem(CLAVE_LOCAL); } catch {}
-  if (previo) mostrarHecho(previo);
-  else if (clan) abrirVotacion();
+  if (clan) abrirVotacion();
   else mostrar("vista-clan");
 }
+// El navegador ya no recuerda el voto: quien decide si un documento votó es la base de datos.
+try { localStorage.removeItem(CLAVE_LOCAL); } catch {}
 window.addEventListener("hashchange", enrutar);
 enrutar();
 </script>
