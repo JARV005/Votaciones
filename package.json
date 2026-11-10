@@ -1,0 +1,11 @@
+{
+  "name": "votaciones",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Votación de células: un voto por número de documento",
+  "engines": { "node": ">=20" },
+  "dependencies": {
+    "@neondatabase/serverless": "^0.10.4"
+  }
+}
