@@ -2,7 +2,7 @@ import { CLAN_IDS } from "../lib/clanes.js";
 import { revisarClave } from "../lib/clave.js";
 import { conexion, listarEquipos, prepararTablas } from "../lib/db.js";
 
-// Agrega o quita células de un clan. Solo con la clave del TL.
+// Agrega o quita células de un clan y marca las finalistas. Solo con la clave del TL.
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
@@ -39,6 +39,12 @@ export default async function handler(req, res) {
       }
       // Los votos ya emitidos guardan el nombre, así que no se pierden.
       await sql`DELETE FROM equipos WHERE id = ${id}`;
+    } else if (accion === "finalista") {
+      const id = Number(body.id);
+      if (!Number.isInteger(id) || typeof body.valor !== "boolean") {
+        return res.status(400).json({ ok: false, motivo: "datos" });
+      }
+      await sql`UPDATE equipos SET finalista = ${body.valor} WHERE id = ${id}`;
     } else {
       return res.status(400).json({ ok: false, motivo: "datos" });
     }

@@ -88,7 +88,7 @@ form { display: flex; flex-direction: column; gap: 24px; }
 .done-tag { color: var(--ok); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 600; }
 .done-name { font-size: 34px; font-weight: 700; line-height: 1.1; overflow-wrap: anywhere; }
 .section { display: flex; flex-direction: column; gap: 14px; }
-.tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.tabs { display: grid; grid-template-columns: repeat(auto-fit, minmax(88px, 1fr)); gap: 8px; }
 .tab {
   display: flex; flex-direction: column; gap: 2px; align-items: flex-start; min-width: 0;
   background: var(--surface); color: var(--fg); border: 1.5px solid var(--line); border-radius: 10px;
@@ -112,6 +112,11 @@ form { display: flex; flex-direction: column; gap: 24px; }
 .mini { background: transparent; color: var(--muted); border: 1.5px solid var(--line); border-radius: 8px; padding: 6px 12px; font: inherit; font-size: 14px; cursor: pointer; white-space: nowrap; }
 .mini-armed { color: var(--accent-ink); background: var(--warn); border-color: var(--warn); font-weight: 700; }
 .mini:disabled { opacity: 0.5; cursor: not-allowed; }
+.mini-on { color: var(--ok); border-color: var(--ok); font-weight: 700; }
+.team-actions { display: flex; gap: 8px; flex-shrink: 0; }
+.note-ok { background: #173326; color: var(--ok); }
+.opt-clan { display: block; color: var(--muted); font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+.opt-box-col { flex-direction: column; align-items: flex-start; justify-content: center; gap: 2px; }
 .addrow { display: flex; gap: 8px; }
 .addrow .input { font-size: 16px; padding: 12px; }
 .addrow .btn { width: auto; padding: 12px 18px; font-size: 16px; white-space: nowrap; }
@@ -122,7 +127,6 @@ table { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-nu
 th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; }
 th { color: var(--muted); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 600; }
 tr:last-child td { border-bottom: 0; }
-@media (max-width: 420px) { .tabs { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 360px) { .grid { grid-template-columns: 1fr; } }
 @media (prefers-reduced-motion: reduce) { .opt-box { transition: none; } }
 </style>
@@ -203,8 +207,9 @@ tr:last-child td { border-bottom: 0; }
       <h1 id="tl-total"></h1>
     </header>
 
-    <div class="tabs" id="tl-tabs" role="tablist" aria-label="Clanes"></div>
+    <div class="tabs" id="tl-tabs" role="tablist" aria-label="Clanes y final"></div>
 
+    <div class="view" id="tl-clan">
     <section class="section">
       <h2 id="tl-conteo-titulo"></h2>
       <p class="sub" id="tl-conteo-vacio" hidden>Este clan no tiene células ni votos.</p>
@@ -220,7 +225,7 @@ tr:last-child td { border-bottom: 0; }
         <button class="btn" id="btn-agregar" type="submit">Agregar</button>
       </form>
       <p class="note" id="aviso-equipos" role="alert" hidden></p>
-      <p class="hint">Quitar una célula no borra los votos que ya recibió.</p>
+      <p class="hint">Quitar una célula no borra los votos que ya recibió. Las que marques "A la final" pasan a la votación de TL.</p>
     </section>
 
     <section class="section">
@@ -241,6 +246,45 @@ tr:last-child td { border-bottom: 0; }
         </table>
       </div>
     </section>
+    </div>
+
+    <!-- Final: votan los TL -->
+    <div class="view" id="tl-final" hidden>
+      <section class="section">
+        <h2>Conteo de la final</h2>
+        <p class="sub" id="final-vacio" hidden>Aún no hay finalistas. En la pestaña de cada clan, marca "A la final" en las células que pasan.</p>
+        <ul class="rows" id="final-conteo"></ul>
+      </section>
+
+      <section class="section" id="final-votar">
+        <h2>Voto del TL</h2>
+        <form id="form-final" novalidate>
+          <div class="field">
+            <label class="label" for="final-documento">Tu número de documento</label>
+            <input class="input input-num" id="final-documento" inputmode="numeric" autocomplete="off" maxlength="12" placeholder="Solo números, sin puntos">
+            <p class="hint">Cada TL vota una sola vez y el voto no se puede cambiar.</p>
+          </div>
+          <fieldset class="field">
+            <legend class="label">Célula ganadora de la final</legend>
+            <div class="grid" id="final-opciones"></div>
+          </fieldset>
+          <p class="note" id="aviso-final" role="alert" hidden></p>
+          <p class="note note-ok" id="ok-final" role="status" hidden></p>
+          <button class="btn" id="btn-final" type="submit" disabled>Elige una finalista</button>
+        </form>
+      </section>
+
+      <section class="section">
+        <h2>Votos de los TL</h2>
+        <p class="sub" id="final-registro-vacio" hidden>Ningún TL ha votado todavía.</p>
+        <div class="tablewrap" id="final-tablawrap">
+          <table>
+            <thead><tr><th>Documento</th><th>Célula</th><th>Clan</th><th>Fecha</th></tr></thead>
+            <tbody id="final-filas"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
 
     <button class="btn btn-ghost" id="btn-actualizar" type="button">Actualizar</button>
   </div>
@@ -255,6 +299,7 @@ const CLANES = [
   { id: "tesla", nombre: "Tesla" },
 ];
 const SIN_CLAN = "sin-clan"; // votos anteriores a la separación por clanes
+const FINAL = "final"; // pestaña de la votación final de los TL
 const CLAVE_LOCAL = "votaciones:voto";
 const $ = (id) => document.getElementById(id);
 const nombreClan = (id) => (CLANES.find((c) => c.id === id) || { nombre: "Sin clan" }).nombre;
@@ -392,7 +437,7 @@ function mostrarHecho(celula) {
 /* ---------- Panel del TL ---------- */
 let claveTL = "";
 let cargando = false;
-let datos = { votos: [], equipos: [] };
+let datos = { votos: [], votosFinal: [], equipos: [] };
 let clanTL = CLANES[0].id;
 
 function fecha(iso) {
@@ -412,17 +457,27 @@ function pintarPanel() {
   // Pestañas: los cuatro clanes, y "Sin clan" solo si hay votos antiguos.
   const pestañas = CLANES.map((c) => c.id);
   if (datos.votos.some((v) => clanDeVoto(v) === SIN_CLAN)) pestañas.push(SIN_CLAN);
+  pestañas.push(FINAL);
   if (!pestañas.includes(clanTL)) clanTL = pestañas[0];
   $("tl-tabs").replaceChildren(...pestañas.map((id) => {
     const b = el("button", "tab");
     b.type = "button";
     b.setAttribute("role", "tab");
     b.setAttribute("aria-selected", String(id === clanTL));
-    const n = datos.votos.filter((v) => clanDeVoto(v) === id).length;
-    b.append(el("span", "tab-name", nombreClan(id)), el("span", "tab-n", String(n)));
-    b.addEventListener("click", () => { clanTL = id; aviso("aviso-equipos", ""); pintarPanel(); });
+    const n = id === FINAL ? datos.votosFinal.length : datos.votos.filter((v) => clanDeVoto(v) === id).length;
+    b.append(el("span", "tab-name", id === FINAL ? "Final" : nombreClan(id)), el("span", "tab-n", String(n)));
+    b.addEventListener("click", () => {
+      clanTL = id;
+      aviso("aviso-equipos", ""); aviso("aviso-final", ""); aviso("ok-final", "");
+      pintarPanel();
+    });
     return b;
   }));
+
+  const enFinal = clanTL === FINAL;
+  $("tl-clan").hidden = enFinal;
+  $("tl-final").hidden = !enFinal;
+  if (enFinal) { pintarFinal(); return; }
 
   const votos = datos.votos.filter((v) => clanDeVoto(v) === clanTL);
   const equipos = datos.equipos.filter((e) => e.clan === clanTL);
@@ -470,7 +525,13 @@ function pintarPanel() {
       }
       editarEquipos({ accion: "quitar", id: e.id });
     });
-    li.append(el("span", "team-name", e.nombre), b);
+    const f = el("button", "mini" + (e.finalista ? " mini-on" : ""), e.finalista ? "Finalista" : "A la final");
+    f.type = "button";
+    f.setAttribute("aria-pressed", String(Boolean(e.finalista)));
+    f.addEventListener("click", () => editarEquipos({ accion: "finalista", id: e.id, valor: !e.finalista }));
+    const acciones = el("span", "team-actions");
+    acciones.append(f, b);
+    li.append(el("span", "team-name", e.nombre), acciones);
     return li;
   }));
 
@@ -488,6 +549,112 @@ function pintarPanel() {
   }));
 }
 
+/* ---------- Final (votan los TL) ---------- */
+let finalId = null;
+let finalNombre = "";
+
+function finalDocValido() { return /^\d{5,12}$/.test($("final-documento").value); }
+
+function refrescarFinal() {
+  const btn = $("btn-final");
+  btn.disabled = cargando || !finalDocValido() || finalId === null;
+  btn.textContent = finalId !== null ? "Votar por " + finalNombre : "Elige una finalista";
+}
+
+function pintarFinal() {
+  const finalistas = datos.equipos.filter((e) => e.finalista);
+
+  // Conteo: finalistas actuales más las que recibieron votos y ya no lo son.
+  const conteo = finalistas.map((e) => ({ clan: e.clan, nombre: e.nombre, n: 0 }));
+  datos.votosFinal.forEach((v) => {
+    let fila = conteo.find((c) => c.clan === v.clan && c.nombre.toLowerCase() === String(v.celula).toLowerCase());
+    if (!fila) { fila = { clan: v.clan, nombre: v.celula, n: 0 }; conteo.push(fila); }
+    fila.n += 1;
+  });
+  conteo.sort((a, b) => b.n - a.n);
+  const max = Math.max(1, ...conteo.map((c) => c.n));
+  $("final-vacio").hidden = conteo.length > 0;
+  $("final-conteo").replaceChildren(...conteo.map((c) => {
+    const li = el("li", "row");
+    const nombre = el("span", "row-name", c.nombre);
+    nombre.append(el("span", "row-out", nombreClan(c.clan)));
+    const track = el("span", "track");
+    if (c.n > 0) {
+      const fill = el("span", "fill");
+      fill.style.width = (c.n / max) * 100 + "%";
+      track.append(fill);
+    }
+    li.append(nombre, track, el("span", "row-n", String(c.n)));
+    return li;
+  }));
+
+  // Opciones de voto.
+  $("final-votar").hidden = finalistas.length === 0;
+  if (!finalistas.some((e) => e.id === finalId)) { finalId = null; finalNombre = ""; }
+  $("final-opciones").replaceChildren(...finalistas.map((e) => {
+    const label = el("label", "opt");
+    const input = el("input");
+    input.type = "radio";
+    input.name = "finalista";
+    input.id = "finalista-" + e.id;
+    input.value = e.id;
+    input.checked = e.id === finalId;
+    input.addEventListener("change", () => { finalId = e.id; finalNombre = e.nombre; aviso("ok-final", ""); refrescarFinal(); });
+    const box = el("span", "opt-box opt-box-col");
+    box.append(el("span", "", e.nombre), el("span", "opt-clan", nombreClan(e.clan)));
+    label.append(input, box);
+    return label;
+  }));
+  refrescarFinal();
+
+  // Registro.
+  $("final-registro-vacio").hidden = datos.votosFinal.length > 0;
+  $("final-tablawrap").hidden = datos.votosFinal.length === 0;
+  $("final-filas").replaceChildren(...datos.votosFinal.map((v) => {
+    const tr = el("tr");
+    tr.append(el("td", "", v.documento), el("td", "", v.celula), el("td", "", nombreClan(v.clan)), el("td", "", fecha(v.creado_en)));
+    return tr;
+  }));
+}
+
+$("final-documento").addEventListener("input", (e) => {
+  e.target.value = e.target.value.replace(/\D/g, "");
+  aviso("aviso-final", "");
+  refrescarFinal();
+});
+
+$("form-final").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  if (cargando || !finalDocValido() || finalId === null) return;
+  const documento = $("final-documento").value;
+  const elegido = finalNombre;
+  ocupado(true);
+  aviso("aviso-final", "");
+  aviso("ok-final", "");
+  let recargar = false;
+  try {
+    const res = await enviar("/api/final", { clave: claveTL, documento, equipoId: finalId });
+    if (res.ok) {
+      datos.votosFinal = res.votosFinal;
+      $("final-documento").value = "";
+      finalId = null;
+      finalNombre = "";
+      aviso("ok-final", "Voto registrado para " + elegido + ".");
+    } else if (res.motivo === "duplicado") {
+      aviso("aviso-final", "El documento " + documento + " ya votó en la final.");
+    } else if (res.motivo === "equipo") {
+      aviso("aviso-final", "Esa célula ya no es finalista. Elige otra.");
+      recargar = true;
+    } else {
+      aviso("aviso-final", "No se pudo guardar el voto. Inténtalo de nuevo.");
+    }
+  } catch {
+    aviso("aviso-final", "No se pudo guardar el voto. Revisa tu conexión e inténtalo de nuevo.");
+  }
+  ocupado(false);
+  if (recargar) cargarResultados(); else pintarPanel();
+});
+
 function ocupado(si) {
   cargando = si;
   $("btn-tl").disabled = si;
@@ -495,6 +662,7 @@ function ocupado(si) {
   $("btn-actualizar").disabled = si;
   $("btn-actualizar").textContent = si ? "Actualizando" : "Actualizar";
   $("btn-agregar").disabled = si;
+  refrescarFinal();
 }
 
 async function cargarResultados() {
@@ -504,7 +672,7 @@ async function cargarResultados() {
   try {
     const res = await enviar("/api/resultados", { clave: claveTL });
     if (res.ok) {
-      datos = { votos: res.votos, equipos: res.equipos };
+      datos = { votos: res.votos, votosFinal: res.votosFinal || [], equipos: res.equipos };
       pintarPanel();
       mostrar("vista-tl");
     } else {

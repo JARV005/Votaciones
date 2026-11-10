@@ -19,9 +19,13 @@ export default async function handler(req, res) {
       SELECT documento, clan, celula, creado_en
       FROM votos
       ORDER BY creado_en DESC`;
+    const votosFinal = await sql`
+      SELECT documento, clan, celula, creado_en
+      FROM votos_final
+      ORDER BY creado_en DESC`;
     const equipos = await listarEquipos(sql);
     res.setHeader("Cache-Control", "no-store");
-    return res.status(200).json({ ok: true, votos, equipos });
+    return res.status(200).json({ ok: true, votos, votosFinal, equipos });
   } catch (err) {
     console.error("Error al leer los votos", err);
     return res.status(500).json({ ok: false, motivo: "error" });
