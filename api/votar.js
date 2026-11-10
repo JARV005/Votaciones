@@ -1,5 +1,5 @@
-import { CELULA_IDS } from "../lib/celulas.js";
-import { conexion, prepararTabla } from "../lib/db.js";
+import { CLAN_IDS } from "../lib/clanes.js";
+import { conexion, prepararTablas } from "../lib/db.js";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -9,9 +9,10 @@ export default async function handler(req, res) {
 
   const body = req.body && typeof req.body === "object" ? req.body : {};
   const documento = String(body.documento ?? "").trim();
-  const celula = String(body.celula ?? "");
+  const clan = String(body.clan ?? "");
+  const equipoId = Number(body.equipoId);
 
-  if (!/^\d{5,12}$/.test(documento) || !CELULA_IDS.includes(celula)) {
+  if (!/^\d{5,12}$/.test(documento) || !CLAN_IDS.includes(clan) || !Number.isInteger(equipoId)) {
     return res.status(400).json({ ok: false, motivo: "datos" });
   }
 
@@ -19,16 +20,22 @@ export default async function handler(req, res) {
   if (!sql) return res.status(503).json({ ok: false, motivo: "sin_servicio" });
 
   try {
-    await prepararTabla(sql);
+    await prepararTablas(sql);
+    const equipo = await sql`
+      SELECT nombre FROM equipos WHERE id = ${equipoId} AND clan = ${clan}`;
+    if (equipo.length === 0) {
+      return res.status(409).json({ ok: false, motivo: "equipo" });
+    }
+    // Se guarda el nombre de la célula: el voto se conserva aunque luego la quiten.
     const filas = await sql`
-      INSERT INTO votos (documento, celula)
-      VALUES (${documento}, ${celula})
+      INSERT INTO votos (documento, clan, celula)
+      VALUES (${documento}, ${clan}, ${equipo[0].nombre})
       ON CONFLICT (documento) DO NOTHING
       RETURNING documento`;
     if (filas.length === 0) {
       return res.status(409).json({ ok: false, motivo: "duplicado" });
     }
-    return res.status(200).json({ ok: true });
+    return res.status(200).json({ ok: true, celula: equipo[0].nombre });
   } catch (err) {
     console.error("Error al guardar el voto", err);
     return res.status(500).json({ ok: false, motivo: "error" });

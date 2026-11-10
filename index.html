@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Votación de células</title>
-<meta name="description" content="Vota por la célula ganadora. Un voto por número de documento.">
+<meta name="description" content="Vota por la célula ganadora de tu clan. Un voto por número de documento.">
 <meta name="robots" content="noindex">
 <style>
-/* Una sola columna: documento primero, células en rejilla de dos. */
+/* Una sola columna: clan, documento, células en rejilla de dos. Panel del TL por pestañas de clan. */
 :root {
   --bg: #0f1b2e;
   --surface: #18283f;
@@ -47,27 +47,34 @@ form { display: flex; flex-direction: column; gap: 24px; }
 .label { font-weight: 600; font-size: 15px; padding: 0; }
 .hint { color: var(--muted); font-size: 13px; }
 .input {
-  width: 100%; background: var(--surface); color: var(--fg);
+  width: 100%; min-width: 0; background: var(--surface); color: var(--fg);
   border: 1.5px solid var(--line); border-radius: 10px;
   padding: 14px; font: inherit; font-size: 18px;
-  font-variant-numeric: tabular-nums; letter-spacing: 0.04em;
 }
+.input-num { font-variant-numeric: tabular-nums; letter-spacing: 0.04em; }
 .input::placeholder { color: #6f829f; letter-spacing: 0; }
-.input:focus-visible, .btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.input:focus-visible, .btn:focus-visible, .tab:focus-visible, .link:focus-visible, .mini:focus-visible {
+  outline: 3px solid var(--accent); outline-offset: 2px;
+}
 .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.opt { position: relative; display: block; cursor: pointer; }
+.opt { position: relative; display: block; cursor: pointer; min-width: 0; }
 .opt input { position: absolute; opacity: 0; inset: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
 .opt-box {
-  display: flex; flex-direction: column; gap: 2px;
+  display: flex; align-items: center; min-height: 60px;
   background: var(--surface); border: 1.5px solid var(--line); border-radius: 10px;
-  padding: 14px; transition: border-color 120ms, background 120ms;
+  padding: 14px; font-weight: 700; font-size: 18px; overflow-wrap: anywhere;
+  transition: border-color 120ms, background 120ms;
 }
-.opt-name { font-weight: 700; font-size: 18px; }
-.opt-pan { color: var(--muted); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; }
 .opt:hover .opt-box { border-color: #4a6187; }
 .opt input:checked + .opt-box { border-color: var(--accent); background: #2a2238; }
-.opt input:checked + .opt-box .opt-pan { color: var(--accent); }
 .opt input:focus-visible + .opt-box { outline: 3px solid var(--accent); outline-offset: 2px; }
+.pick {
+  display: flex; align-items: center; min-height: 60px; width: 100%; text-align: left;
+  background: var(--surface); color: var(--fg); border: 1.5px solid var(--line); border-radius: 10px;
+  padding: 14px; font: inherit; font-weight: 700; font-size: 18px; cursor: pointer;
+}
+.pick:hover { border-color: #4a6187; }
+.pick:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 .btn {
   width: 100%; border: 0; border-radius: 10px; padding: 16px;
   font: inherit; font-size: 17px; font-weight: 700;
@@ -75,22 +82,47 @@ form { display: flex; flex-direction: column; gap: 24px; }
 }
 .btn:disabled { background: #33455f; color: #8194b0; cursor: not-allowed; }
 .btn-ghost { background: transparent; color: var(--fg); border: 1.5px solid var(--line); }
+.link { background: none; border: 0; padding: 0; font: inherit; font-size: 14px; color: var(--muted); text-decoration: underline; cursor: pointer; align-self: flex-start; }
 .note { border-radius: 10px; padding: 14px; font-size: 15px; background: #33291a; color: var(--warn); }
 .done { display: flex; flex-direction: column; gap: 10px; background: var(--surface); border: 1.5px solid var(--ok); border-radius: 12px; padding: 24px 20px; }
 .done-tag { color: var(--ok); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 600; }
-.done-name { font-size: 34px; font-weight: 700; line-height: 1.1; }
+.done-name { font-size: 34px; font-weight: 700; line-height: 1.1; overflow-wrap: anywhere; }
 .section { display: flex; flex-direction: column; gap: 14px; }
+.tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.tab {
+  display: flex; flex-direction: column; gap: 2px; align-items: flex-start; min-width: 0;
+  background: var(--surface); color: var(--fg); border: 1.5px solid var(--line); border-radius: 10px;
+  padding: 10px; font: inherit; cursor: pointer;
+}
+.tab-name { font-size: 13px; font-weight: 600; overflow-wrap: anywhere; }
+.tab-n { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.tab[aria-selected="true"] { border-color: var(--accent); background: #2a2238; }
+.tab[aria-selected="true"] .tab-name { color: var(--accent); }
 .rows { display: flex; flex-direction: column; gap: 10px; list-style: none; padding: 0; margin: 0; }
-.row { display: grid; grid-template-columns: 96px 1fr 36px; align-items: center; gap: 10px; font-variant-numeric: tabular-nums; }
-.row-name { font-weight: 600; }
+.row { display: grid; grid-template-columns: minmax(0, 110px) 1fr 36px; align-items: center; gap: 10px; font-variant-numeric: tabular-nums; }
+.row-name { font-weight: 600; overflow-wrap: anywhere; }
+.row-out { color: var(--muted); font-weight: 400; font-size: 12px; display: block; }
 .track { height: 12px; background: var(--surface); border-radius: 6px; overflow: hidden; }
 .fill { display: block; height: 100%; background: var(--accent); border-radius: 6px; min-width: 2px; }
 .row-n { text-align: right; font-weight: 700; }
+.teams { display: flex; flex-direction: column; list-style: none; padding: 0; margin: 0; border: 1.5px solid var(--line); border-radius: 10px; }
+.team { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+.team:last-child { border-bottom: 0; }
+.team-name { font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
+.mini { background: transparent; color: var(--muted); border: 1.5px solid var(--line); border-radius: 8px; padding: 6px 12px; font: inherit; font-size: 14px; cursor: pointer; white-space: nowrap; }
+.mini-armed { color: var(--accent-ink); background: var(--warn); border-color: var(--warn); font-weight: 700; }
+.mini:disabled { opacity: 0.5; cursor: not-allowed; }
+.addrow { display: flex; gap: 8px; }
+.addrow .input { font-size: 16px; padding: 12px; }
+.addrow .btn { width: auto; padding: 12px 18px; font-size: 16px; white-space: nowrap; }
+.linkbox { display: flex; gap: 8px; align-items: center; }
+.linkbox code { flex: 1; min-width: 0; overflow-x: auto; white-space: nowrap; background: var(--surface); border: 1.5px solid var(--line); border-radius: 8px; padding: 9px 12px; font-size: 13px; }
 .tablewrap { overflow-x: auto; border: 1.5px solid var(--line); border-radius: 10px; }
 table { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
 th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; }
 th { color: var(--muted); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 600; }
 tr:last-child td { border-bottom: 0; }
+@media (max-width: 420px) { .tabs { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 360px) { .grid { grid-template-columns: 1fr; } }
 @media (prefers-reduced-motion: reduce) { .opt-box { transition: none; } }
 </style>
@@ -98,23 +130,35 @@ tr:last-child td { border-bottom: 0; }
 <body>
 <main class="wrap">
 
-  <!-- Votación -->
-  <div class="view" id="vista-voto">
+  <!-- Elegir clan -->
+  <div class="view" id="vista-clan" hidden>
     <header class="head">
       <span class="kicker">Votación de coders</span>
+      <h1>¿De qué clan eres?</h1>
+      <p class="sub">Elige tu clan para ver sus células.</p>
+    </header>
+    <div class="grid" id="lista-clanes"></div>
+  </div>
+
+  <!-- Votación -->
+  <div class="view" id="vista-voto" hidden>
+    <header class="head">
+      <span class="kicker" id="voto-clan"></span>
       <h1>¿Cuál célula es la ganadora?</h1>
       <p class="sub">Escribe tu documento, elige una célula y registra tu voto.</p>
+      <button class="link" id="btn-cambiar-clan" type="button">No es mi clan</button>
     </header>
 
     <form id="form-voto" novalidate>
       <div class="field">
         <label class="label" for="documento">Número de documento</label>
-        <input class="input" id="documento" inputmode="numeric" autocomplete="off" maxlength="12" placeholder="Solo números, sin puntos">
+        <input class="input input-num" id="documento" inputmode="numeric" autocomplete="off" maxlength="12" placeholder="Solo números, sin puntos">
         <p class="hint">Cada documento puede votar una sola vez y el voto no se puede cambiar.</p>
       </div>
 
       <fieldset class="field">
         <legend class="label">Célula ganadora</legend>
+        <p class="sub" id="opciones-estado">Cargando células</p>
         <div class="grid" id="opciones"></div>
       </fieldset>
 
@@ -158,13 +202,38 @@ tr:last-child td { border-bottom: 0; }
       <span class="kicker">Panel del TL</span>
       <h1 id="tl-total"></h1>
     </header>
+
+    <div class="tabs" id="tl-tabs" role="tablist" aria-label="Clanes"></div>
+
     <section class="section">
-      <h2>Conteo por célula</h2>
+      <h2 id="tl-conteo-titulo"></h2>
+      <p class="sub" id="tl-conteo-vacio" hidden>Este clan no tiene células ni votos.</p>
       <ul class="rows" id="tl-conteo"></ul>
     </section>
+
+    <section class="section">
+      <h2>Células del clan</h2>
+      <p class="sub" id="tl-equipos-vacio" hidden>Este clan no tiene células. Agrega la primera.</p>
+      <ul class="teams" id="tl-equipos"></ul>
+      <form class="addrow" id="form-agregar">
+        <input class="input" id="nueva-celula" maxlength="40" autocomplete="off" placeholder="Nombre de la célula" aria-label="Nombre de la nueva célula">
+        <button class="btn" id="btn-agregar" type="submit">Agregar</button>
+      </form>
+      <p class="note" id="aviso-equipos" role="alert" hidden></p>
+      <p class="hint">Quitar una célula no borra los votos que ya recibió.</p>
+    </section>
+
+    <section class="section">
+      <h2>Link de votación del clan</h2>
+      <div class="linkbox">
+        <code id="tl-link"></code>
+        <button class="mini" id="btn-copiar" type="button">Copiar</button>
+      </div>
+    </section>
+
     <section class="section">
       <h2>Registro de votos</h2>
-      <p class="sub" id="tl-vacio" hidden>Aún no hay votos registrados.</p>
+      <p class="sub" id="tl-vacio" hidden>Este clan aún no tiene votos.</p>
       <div class="tablewrap" id="tl-tablawrap">
         <table>
           <thead><tr><th>Documento</th><th>Célula</th><th>Fecha</th></tr></thead>
@@ -172,26 +241,23 @@ tr:last-child td { border-bottom: 0; }
         </table>
       </div>
     </section>
+
     <button class="btn btn-ghost" id="btn-actualizar" type="button">Actualizar</button>
   </div>
 
 </main>
 
 <script>
-// Si cambias un nombre, cámbialo también en lib/celulas.js (el id debe coincidir).
-const CELULAS = [
-  { id: "odin", nombre: "Odin", panteon: "Nórdico" },
-  { id: "hades", nombre: "Hades", panteon: "Griego" },
-  { id: "zeus", nombre: "Zeus", panteon: "Griego" },
-  { id: "susanoo", nombre: "Susanoo", panteon: "Japonés" },
-  { id: "poseidon", nombre: "Poseidon", panteon: "Griego" },
-  { id: "ra", nombre: "Ra", panteon: "Egipcio" },
-  { id: "amaterasu", nombre: "Amaterasu", panteon: "Japonés" },
-  { id: "anubis", nombre: "Anubis", panteon: "Egipcio" },
+const CLANES = [
+  { id: "ritchie", nombre: "Ritchie" },
+  { id: "nakamoto", nombre: "Nakamoto" },
+  { id: "ubuntu", nombre: "Ubuntu" },
+  { id: "tesla", nombre: "Tesla" },
 ];
+const SIN_CLAN = "sin-clan"; // votos anteriores a la separación por clanes
 const CLAVE_LOCAL = "votaciones:voto";
 const $ = (id) => document.getElementById(id);
-const nombre = (id) => (CELULAS.find((c) => c.id === id) || { nombre: id }).nombre;
+const nombreClan = (id) => (CLANES.find((c) => c.id === id) || { nombre: "Sin clan" }).nombre;
 
 function el(tag, clase, texto) {
   const n = document.createElement(tag);
@@ -209,80 +275,125 @@ async function enviar(ruta, datos) {
   return r.json();
 }
 
-/* ---------- Votación ---------- */
-let celula = "";
-let enviando = false;
+function aviso(id, texto) {
+  $(id).textContent = texto || "";
+  $(id).hidden = !texto;
+}
 
-CELULAS.forEach((c) => {
-  const label = el("label", "opt");
-  const input = el("input");
-  input.type = "radio";
-  input.name = "celula";
-  input.id = "celula-" + c.id;
-  input.value = c.id;
-  input.addEventListener("change", () => { celula = c.id; refrescar(); });
-  const box = el("span", "opt-box");
-  box.append(el("span", "opt-name", c.nombre), el("span", "opt-pan", c.panteon));
-  label.append(input, box);
-  $("opciones").append(label);
+/* ---------- Clan ---------- */
+const clanUrl = new URLSearchParams(location.search).get("clan");
+let clan = CLANES.some((c) => c.id === clanUrl) ? clanUrl : "";
+
+CLANES.forEach((c) => {
+  const b = el("button", "pick", c.nombre);
+  b.type = "button";
+  b.addEventListener("click", () => { clan = c.id; abrirVotacion(); });
+  $("lista-clanes").append(b);
 });
+
+$("btn-cambiar-clan").addEventListener("click", () => { clan = ""; mostrar("vista-clan"); });
+
+/* ---------- Votación ---------- */
+let equipoId = null;
+let equipoNombre = "";
+let enviando = false;
 
 function docValido() { return /^\d{5,12}$/.test($("documento").value); }
 
 function refrescar() {
   const btn = $("btn-votar");
-  btn.disabled = enviando || !docValido() || !celula;
-  btn.textContent = enviando ? "Guardando voto" : celula ? "Votar por " + nombre(celula) : "Elige una célula";
+  btn.disabled = enviando || !docValido() || equipoId === null;
+  btn.textContent = enviando ? "Guardando voto" : equipoId !== null ? "Votar por " + equipoNombre : "Elige una célula";
 }
 
-function avisoVoto(texto) {
-  $("aviso-voto").textContent = texto || "";
-  $("aviso-voto").hidden = !texto;
+async function abrirVotacion() {
+  mostrar("vista-voto");
+  $("voto-clan").textContent = "Clan " + nombreClan(clan);
+  equipoId = null;
+  equipoNombre = "";
+  aviso("aviso-voto", "");
+  $("opciones").replaceChildren();
+  $("opciones-estado").textContent = "Cargando células";
+  $("opciones-estado").hidden = false;
+  refrescar();
+
+  const pedido = clan;
+  let res;
+  try {
+    const r = await fetch("/api/equipos?clan=" + encodeURIComponent(pedido));
+    res = await r.json();
+  } catch {
+    res = { ok: false };
+  }
+  if (pedido !== clan) return; // cambió de clan mientras cargaba
+
+  if (!res.ok) {
+    $("opciones-estado").textContent = "No se pudieron cargar las células. Recarga la página.";
+    return;
+  }
+  if (res.equipos.length === 0) {
+    $("opciones-estado").textContent = "Este clan aún no tiene células para votar.";
+    return;
+  }
+  $("opciones-estado").hidden = true;
+  res.equipos.forEach((e) => {
+    const label = el("label", "opt");
+    const input = el("input");
+    input.type = "radio";
+    input.name = "celula";
+    input.id = "celula-" + e.id;
+    input.value = e.id;
+    input.addEventListener("change", () => { equipoId = e.id; equipoNombre = e.nombre; refrescar(); });
+    label.append(input, el("span", "opt-box", e.nombre));
+    $("opciones").append(label);
+  });
 }
 
 $("documento").addEventListener("input", (e) => {
   e.target.value = e.target.value.replace(/\D/g, "");
-  avisoVoto("");
+  aviso("aviso-voto", "");
   refrescar();
 });
 
 $("form-voto").addEventListener("submit", async (e) => {
   e.preventDefault();
-  if (enviando || !docValido() || !celula) return;
+  if (enviando || !docValido() || equipoId === null) return;
   const documento = $("documento").value;
   enviando = true;
-  avisoVoto("");
+  aviso("aviso-voto", "");
   refrescar();
   try {
-    const res = await enviar("/api/votar", { documento, celula });
+    const res = await enviar("/api/votar", { documento, clan, equipoId });
     if (res.ok) {
-      try { localStorage.setItem(CLAVE_LOCAL, celula); } catch {}
-      mostrarHecho(celula);
+      try { localStorage.setItem(CLAVE_LOCAL, res.celula); } catch {}
+      mostrarHecho(res.celula);
     } else if (res.motivo === "duplicado") {
-      avisoVoto("El documento " + documento + " ya votó. Solo se permite un voto por documento.");
+      aviso("aviso-voto", "El documento " + documento + " ya votó. Solo se permite un voto por documento.");
+    } else if (res.motivo === "equipo") {
+      aviso("aviso-voto", "Esa célula ya no está en la votación. Elige otra.");
+      enviando = false;
+      abrirVotacion();
+      return;
     } else {
-      avisoVoto("No se pudo guardar el voto. Inténtalo de nuevo.");
+      aviso("aviso-voto", "No se pudo guardar el voto. Inténtalo de nuevo.");
     }
   } catch {
-    avisoVoto("No se pudo guardar el voto. Revisa tu conexión e inténtalo de nuevo.");
+    aviso("aviso-voto", "No se pudo guardar el voto. Revisa tu conexión e inténtalo de nuevo.");
   }
   enviando = false;
   refrescar();
 });
 
-function mostrarHecho(id) {
-  $("hecho-nombre").textContent = nombre(id);
+function mostrarHecho(celula) {
+  $("hecho-nombre").textContent = celula;
   mostrar("vista-hecho");
 }
 
 /* ---------- Panel del TL ---------- */
 let claveTL = "";
 let cargando = false;
-
-function avisoTL(texto) {
-  $("aviso-tl").textContent = texto || "";
-  $("aviso-tl").hidden = !texto;
-}
+let datos = { votos: [], equipos: [] };
+let clanTL = CLANES[0].id;
 
 function fecha(iso) {
   const d = new Date(iso);
@@ -292,63 +403,144 @@ function fecha(iso) {
   });
 }
 
-function pintarResultados(votos) {
-  $("tl-total").textContent = votos.length + (votos.length === 1 ? " voto" : " votos");
+const clanDeVoto = (v) => (CLANES.some((c) => c.id === v.clan) ? v.clan : SIN_CLAN);
 
-  const conteo = CELULAS.map((c) => ({ ...c, n: votos.filter((v) => v.celula === c.id).length }))
-    .sort((a, b) => b.n - a.n);
+function pintarPanel() {
+  const total = datos.votos.length;
+  $("tl-total").textContent = total + (total === 1 ? " voto" : " votos");
+
+  // Pestañas: los cuatro clanes, y "Sin clan" solo si hay votos antiguos.
+  const pestañas = CLANES.map((c) => c.id);
+  if (datos.votos.some((v) => clanDeVoto(v) === SIN_CLAN)) pestañas.push(SIN_CLAN);
+  if (!pestañas.includes(clanTL)) clanTL = pestañas[0];
+  $("tl-tabs").replaceChildren(...pestañas.map((id) => {
+    const b = el("button", "tab");
+    b.type = "button";
+    b.setAttribute("role", "tab");
+    b.setAttribute("aria-selected", String(id === clanTL));
+    const n = datos.votos.filter((v) => clanDeVoto(v) === id).length;
+    b.append(el("span", "tab-name", nombreClan(id)), el("span", "tab-n", String(n)));
+    b.addEventListener("click", () => { clanTL = id; aviso("aviso-equipos", ""); pintarPanel(); });
+    return b;
+  }));
+
+  const votos = datos.votos.filter((v) => clanDeVoto(v) === clanTL);
+  const equipos = datos.equipos.filter((e) => e.clan === clanTL);
+  const esClan = clanTL !== SIN_CLAN;
+
+  // Conteo: células actuales más las que recibieron votos y ya fueron quitadas.
+  const conteo = equipos.map((e) => ({ nombre: e.nombre, activa: true, n: 0 }));
+  votos.forEach((v) => {
+    let fila = conteo.find((c) => c.nombre.toLowerCase() === String(v.celula).toLowerCase());
+    if (!fila) { fila = { nombre: v.celula, activa: false, n: 0 }; conteo.push(fila); }
+    fila.n += 1;
+  });
+  conteo.sort((a, b) => b.n - a.n);
   const max = Math.max(1, ...conteo.map((c) => c.n));
+  $("tl-conteo-titulo").textContent = "Conteo de " + nombreClan(clanTL);
+  $("tl-conteo-vacio").hidden = conteo.length > 0;
   $("tl-conteo").replaceChildren(...conteo.map((c) => {
     const li = el("li", "row");
+    const nombre = el("span", "row-name", c.nombre);
+    if (!c.activa && esClan) nombre.append(el("span", "row-out", "retirada"));
     const track = el("span", "track");
     if (c.n > 0) {
       const fill = el("span", "fill");
       fill.style.width = (c.n / max) * 100 + "%";
       track.append(fill);
     }
-    li.append(el("span", "row-name", c.nombre), track, el("span", "row-n", String(c.n)));
+    li.append(nombre, track, el("span", "row-n", String(c.n)));
     return li;
   }));
 
+  // Edición de células.
+  $("form-agregar").closest("section").hidden = !esClan;
+  $("tl-equipos-vacio").hidden = equipos.length > 0;
+  $("tl-equipos").hidden = equipos.length === 0;
+  $("tl-equipos").replaceChildren(...equipos.map((e) => {
+    const li = el("li", "team");
+    const b = el("button", "mini", "Quitar");
+    b.type = "button";
+    b.addEventListener("click", () => {
+      if (!b.classList.contains("mini-armed")) {
+        b.classList.add("mini-armed");
+        b.textContent = "Confirmar";
+        setTimeout(() => { b.classList.remove("mini-armed"); b.textContent = "Quitar"; }, 4000);
+        return;
+      }
+      editarEquipos({ accion: "quitar", id: e.id });
+    });
+    li.append(el("span", "team-name", e.nombre), b);
+    return li;
+  }));
+
+  // Link del clan.
+  $("tl-link").closest("section").hidden = !esClan;
+  $("tl-link").textContent = location.origin + "/?clan=" + clanTL;
+
+  // Registro.
   $("tl-vacio").hidden = votos.length > 0;
   $("tl-tablawrap").hidden = votos.length === 0;
   $("tl-filas").replaceChildren(...votos.map((v) => {
     const tr = el("tr");
-    tr.append(el("td", "", v.documento), el("td", "", nombre(v.celula)), el("td", "", fecha(v.creado_en)));
+    tr.append(el("td", "", v.documento), el("td", "", v.celula), el("td", "", fecha(v.creado_en)));
     return tr;
   }));
 }
 
+function ocupado(si) {
+  cargando = si;
+  $("btn-tl").disabled = si;
+  $("btn-tl").textContent = si ? "Cargando" : "Ver resultados";
+  $("btn-actualizar").disabled = si;
+  $("btn-actualizar").textContent = si ? "Actualizando" : "Actualizar";
+  $("btn-agregar").disabled = si;
+}
+
 async function cargarResultados() {
   if (cargando || !claveTL) return;
-  cargando = true;
-  $("btn-tl").disabled = true;
-  $("btn-tl").textContent = "Cargando";
-  $("btn-actualizar").disabled = true;
-  $("btn-actualizar").textContent = "Actualizando";
-  avisoTL("");
+  ocupado(true);
+  aviso("aviso-tl", "");
   try {
     const res = await enviar("/api/resultados", { clave: claveTL });
     if (res.ok) {
-      pintarResultados(res.votos);
+      datos = { votos: res.votos, equipos: res.equipos };
+      pintarPanel();
       mostrar("vista-tl");
     } else {
       mostrar("vista-tl-acceso");
-      avisoTL(
+      aviso("aviso-tl",
         res.motivo === "clave" ? "La clave no coincide."
         : res.motivo === "sin_clave" ? "Falta configurar la variable CLAVE_TL en Vercel."
         : res.motivo === "sin_servicio" ? "Falta conectar la base de datos en Vercel."
-        : "No se pudieron leer los votos. Inténtalo de nuevo."
-      );
+        : "No se pudieron leer los votos. Inténtalo de nuevo.");
     }
   } catch {
-    avisoTL("No se pudieron leer los votos. Inténtalo de nuevo.");
+    aviso("aviso-tl", "No se pudieron leer los votos. Inténtalo de nuevo.");
   }
-  cargando = false;
-  $("btn-tl").disabled = false;
-  $("btn-tl").textContent = "Ver resultados";
-  $("btn-actualizar").disabled = false;
-  $("btn-actualizar").textContent = "Actualizar";
+  ocupado(false);
+}
+
+async function editarEquipos(cambio) {
+  if (cargando) return;
+  ocupado(true);
+  aviso("aviso-equipos", "");
+  try {
+    const res = await enviar("/api/admin-equipos", { clave: claveTL, ...cambio });
+    if (res.ok) {
+      datos.equipos = res.equipos;
+      if (cambio.accion === "agregar") $("nueva-celula").value = "";
+      pintarPanel();
+    } else {
+      aviso("aviso-equipos",
+        res.motivo === "repetido" ? "Ese clan ya tiene una célula con ese nombre."
+        : res.motivo === "datos" ? "Escribe un nombre de hasta 40 caracteres."
+        : "No se pudo guardar el cambio. Inténtalo de nuevo.");
+    }
+  } catch {
+    aviso("aviso-equipos", "No se pudo guardar el cambio. Inténtalo de nuevo.");
+  }
+  ocupado(false);
 }
 
 $("form-tl").addEventListener("submit", (e) => {
@@ -357,9 +549,30 @@ $("form-tl").addEventListener("submit", (e) => {
   cargarResultados();
 });
 $("btn-actualizar").addEventListener("click", cargarResultados);
+$("form-agregar").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const nombre = $("nueva-celula").value.replace(/\s+/g, " ").trim();
+  if (!nombre) { aviso("aviso-equipos", "Escribe el nombre de la célula."); return; }
+  editarEquipos({ accion: "agregar", clan: clanTL, nombre });
+});
+$("btn-copiar").addEventListener("click", async () => {
+  const b = $("btn-copiar");
+  try {
+    await navigator.clipboard.writeText($("tl-link").textContent);
+    b.textContent = "Copiado";
+  } catch {
+    const r = document.createRange();
+    r.selectNodeContents($("tl-link"));
+    const s = getSelection();
+    s.removeAllRanges();
+    s.addRange(r);
+    b.textContent = "Seleccionado";
+  }
+  setTimeout(() => { b.textContent = "Copiar"; }, 2000);
+});
 
 /* ---------- Vistas ---------- */
-const VISTAS = ["vista-voto", "vista-hecho", "vista-tl-acceso", "vista-tl"];
+const VISTAS = ["vista-clan", "vista-voto", "vista-hecho", "vista-tl-acceso", "vista-tl"];
 function mostrar(id) { VISTAS.forEach((v) => { $(v).hidden = v !== id; }); }
 
 function enrutar() {
@@ -369,7 +582,9 @@ function enrutar() {
   }
   let previo = null;
   try { previo = localStorage.getItem(CLAVE_LOCAL); } catch {}
-  if (previo) mostrarHecho(previo); else mostrar("vista-voto");
+  if (previo) mostrarHecho(previo);
+  else if (clan) abrirVotacion();
+  else mostrar("vista-clan");
 }
 window.addEventListener("hashchange", enrutar);
 enrutar();

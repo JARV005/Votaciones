@@ -1,31 +1,35 @@
 # Votaciones
 
-Mini aplicación para que los coders voten por la célula ganadora.
+Mini aplicación para que los coders voten por la célula ganadora de su clan.
 
+- Cuatro clanes: Ritchie, Nakamoto, Ubuntu y Tesla. Cada clan tiene sus propias células.
 - Un voto por número de documento (lo impide la base de datos).
-- Cada voto guarda documento, célula y fecha.
-- Panel del TL con conteo y registro de votos en `/#tl`, protegido con clave.
+- Cada voto guarda documento, clan, célula y fecha.
+- Panel del TL en `/#tl`, protegido con clave: resultados separados por clan y edición de células (agregar y quitar).
+
+## Links
+
+- Votación con selector de clan: la URL del proyecto.
+- Votación directa de un clan: `/?clan=ritchie`, `/?clan=nakamoto`, `/?clan=ubuntu`, `/?clan=tesla`.
+- Panel del TL: `/#tl`.
 
 ## Estructura
 
-- `index.html`: página de votación y panel del TL.
+- `index.html`: votación y panel del TL.
+- `api/equipos.js`: células de un clan (público).
 - `api/votar.js`: registra un voto.
-- `api/resultados.js`: devuelve los votos si la clave es correcta.
-- `lib/`: conexión a la base de datos y lista de células.
+- `api/resultados.js`: votos y células, con clave.
+- `api/admin-equipos.js`: agrega o quita células, con clave.
+- `lib/`: conexión a la base de datos, clanes y validación de la clave.
 
 ## Despliegue en Vercel
 
-1. En Vercel, **Add New > Project** e importa este repositorio. No requiere configuración de build.
-2. En el proyecto, abre **Storage**, crea una base de datos **Neon (Postgres)** y conéctala al proyecto. Eso crea la variable `DATABASE_URL`.
-3. En **Settings > Environment Variables** agrega `CLAVE_TL` con la clave que usarás para ver los resultados.
-4. Haz **Redeploy** para que tome las variables.
+1. Importa este repositorio como proyecto. No requiere configuración de build.
+2. En **Storage**, crea una base de datos **Neon (Postgres)** y conéctala. Eso crea `DATABASE_URL`.
+3. En **Settings > Environment Variables** agrega `CLAVE_TL`.
+4. Haz **Redeploy**.
 
-La tabla `votos` se crea sola con el primer voto.
-
-## Uso
-
-- Link para los coders: la URL del proyecto.
-- Panel del TL: la misma URL terminada en `/#tl`.
+Las tablas se crean solas en el primer uso. Cada clan arranca con ocho células de ejemplo que se editan desde el panel.
 
 ## Reiniciar la votación
 
