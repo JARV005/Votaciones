@@ -39,6 +39,18 @@ export default async function handler(req, res) {
       }
       // Los votos ya emitidos guardan el nombre, así que no se pierden.
       await sql`DELETE FROM equipos WHERE id = ${id}`;
+    } else if (accion === "limpiar") {
+      // Borra los votos de los coders de un clan, o los de la final. No toca las células.
+      const clan = String(body.clan ?? "");
+      let borrados;
+      if (clan === "final") {
+        borrados = await sql`DELETE FROM votos_final RETURNING documento`;
+      } else if (CLAN_IDS.includes(clan)) {
+        borrados = await sql`DELETE FROM votos WHERE clan = ${clan} RETURNING documento`;
+      } else {
+        return res.status(400).json({ ok: false, motivo: "datos" });
+      }
+      return res.status(200).json({ ok: true, borrados: borrados.length });
     } else if (accion === "finalista") {
       const id = Number(body.id);
       if (!Number.isInteger(id) || typeof body.valor !== "boolean") {

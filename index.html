@@ -249,6 +249,7 @@ tr:last-child td { border-bottom: 0; }
           <tbody id="tl-filas"></tbody>
         </table>
       </div>
+      <button class="mini" id="btn-limpiar-clan" type="button" style="align-self:flex-start">Borrar votos de este clan</button>
     </section>
     </div>
 
@@ -291,6 +292,7 @@ tr:last-child td { border-bottom: 0; }
             <tbody id="final-filas"></tbody>
           </table>
         </div>
+        <button class="mini" id="btn-limpiar-final" type="button" style="align-self:flex-start">Borrar votos de la final</button>
       </section>
     </div>
 
@@ -553,6 +555,7 @@ function pintarPanel() {
   $("tl-link").textContent = location.origin + "/?clan=" + clanTL;
 
   // Registro.
+  $("btn-limpiar-clan").hidden = !esClan || votos.length === 0;
   $("tl-vacio").hidden = votos.length > 0;
   $("tl-tablawrap").hidden = votos.length === 0;
   $("tl-filas").replaceChildren(...votos.map((v) => {
@@ -621,6 +624,7 @@ function pintarFinal() {
   refrescarFinal();
 
   // Registro.
+  $("btn-limpiar-final").hidden = datos.votosFinal.length === 0;
   $("final-registro-vacio").hidden = datos.votosFinal.length > 0;
   $("final-tablawrap").hidden = datos.votosFinal.length === 0;
   $("final-filas").replaceChildren(...datos.votosFinal.map((v) => {
@@ -740,6 +744,31 @@ $("form-agregar").addEventListener("submit", (e) => {
   if (!nombre) { aviso("aviso-equipos", "Escribe el nombre de la célula."); return; }
   editarEquipos({ accion: "agregar", clan: clanTL, nombre });
 });
+// Borrado de votos: primer toque arma el botón, segundo toque confirma.
+function botonLimpiar(id, texto, clanDe) {
+  const b = $(id);
+  let temporizador = null;
+  const desarmar = () => { clearTimeout(temporizador); b.classList.remove("mini-armed"); b.textContent = texto; };
+  b.addEventListener("click", async () => {
+    if (cargando) return;
+    if (!b.classList.contains("mini-armed")) {
+      b.classList.add("mini-armed");
+      b.textContent = "Confirmar borrado, no se puede deshacer";
+      temporizador = setTimeout(desarmar, 5000);
+      return;
+    }
+    desarmar();
+    ocupado(true);
+    let ok = false;
+    try { ok = (await enviar("/api/admin-equipos", { clave: claveTL, accion: "limpiar", clan: clanDe() })).ok; } catch {}
+    ocupado(false);
+    if (ok) cargarResultados();
+    else aviso(clanDe() === FINAL ? "aviso-final" : "aviso-equipos", "No se pudieron borrar los votos. Inténtalo de nuevo.");
+  });
+}
+botonLimpiar("btn-limpiar-clan", "Borrar votos de este clan", () => clanTL);
+botonLimpiar("btn-limpiar-final", "Borrar votos de la final", () => FINAL);
+
 $("btn-copiar").addEventListener("click", async () => {
   const b = $("btn-copiar");
   try {
